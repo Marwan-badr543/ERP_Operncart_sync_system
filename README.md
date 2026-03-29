@@ -1,128 +1,132 @@
-# ERPNext → OpenCart Product Sync System
+# ERPNext ↔ OpenCart Product Sync System
 
-A Python-based integration that synchronizes products from ERPNext to OpenCart.
-Supports **bulk syncing** (all products) and **real-time webhook-based syncing** (add / update / delete triggered by ERPNext events).
+A Python-based integration system that synchronizes products from ERPNext to OpenCart. Supports **bulk syncing** (all products at once) and **real-time webhook-based syncing** (add / update / delete individual products triggered by ERPNext events).
 
-The system communicates with OpenCart's MySQL database through a lightweight PHP bridge file (`db_bridge.php`) hosted on your OpenCart server.
-
+Communication with the OpenCart database happens through a lightweight PHP bridge file (`db_bridge.php`) uploaded to your OpenCart server. The Python app sends SQL queries to the PHP bridge via HTTP, which executes them on the OpenCart MySQL database.
 
 ---
 
+## Table of Contents
+
+- [Features](#features)
+- [Architecture Overview](#architecture-overview)
+- [Project Structure](#project-structure)
+- [Prerequisites](#prerequisites)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Usage](#usage)
+- [ERPNext Webhook Setup](#erpnext-webhook-setup)
+- [API Endpoints](#api-endpoints)
+- [How It Works](#how-it-works)
+- [Important Notes](#important-notes)
+- [Troubleshooting](#troubleshooting)
+
+---
 
 ## Features
 
-- **Bulk product sync** — Syncs all products from configured ERPNext categories to OpenCart.
-- **Real-time webhook sync** — FastAPI server listens for ERPNext webhooks to add, update, or delete products.
-- **Price sync** — Fetches the "Standard Selling" price from ERPNext.
-- **Quantity sync** — Calculates available stock across one or more ERPNext warehouses.
+- **Bulk product sync** — Syncs all products from configured ERPNext categories to OpenCart in one run.
+- **Real-time webhook sync** — FastAPI server listens for ERPNext webhooks to add, update, or delete products instantly.
+- **Price sync** — Fetches the "Standard Selling" price from ERPNext and maps it to OpenCart.
+- **Quantity sync** — Calculates available stock across one or more ERPNext warehouses (`actual_qty – reserved_qty`).
 - **Category linking** — Automatically links products to their corresponding OpenCart categories.
 - **Multi-language support** — Inserts product descriptions into all configured OpenCart languages.
 - **SEO-friendly URLs** — Generates clean SEO keywords for each product automatically.
 - **Retry mechanism** — Each operation retries up to 4 times on failure.
-- **Logging** — All operations are logged to `app.log` and the console with colored output.
-
+- **Logging** — All operations logged to `app.log` and console with colored output.
 
 ---
-
 
 ## Architecture Overview
 
 ```
-+---------------+       HTTP/API        +--------------------+
-|   ERPNext     | ------------------>   |  Python Sync App   |
-|   (Source)    |                        |  (This Project)    |
-+---------------+                       +---------+----------+
-                                                  |
-                                           HTTP POST (SQL)
-                                                  |
-                                                  v
-                                        +-------------------+
-                                        |  db_bridge.php    |
-                                        | (On OpenCart Web   |
-                                        |      Server)      |
-                                        +---------+---------+
-                                                  |
-                                            MySQL Queries
-                                                  |
-                                                  v
-                                        +-------------------+
-                                        |  OpenCart MySQL    |
-                                        |    Database        |
-                                        +-------------------+
+┌─────────────┐       HTTP/API        ┌──────────────────┐
+│   ERPNext    │ ───────────────────►  │  Python Sync App │
+│   (Source)   │                       │  (This Project)  │
+└─────────────┘                       └────────┬─────────┘
+                                               │
+                                        HTTP POST (SQL)
+                                               │
+                                               ▼
+                                      ┌─────────────────┐
+                                      │  db_bridge.php   │
+                                      │ (On OpenCart Web  │
+                                      │      Server)     │
+                                      └────────┬────────┘
+                                               │
+                                         MySQL Queries
+                                               │
+                                               ▼
+                                      ┌─────────────────┐
+                                      │  OpenCart MySQL   │
+                                      │    Database       │
+                                      └─────────────────┘
 ```
 
-
 ---
-
 
 ## Project Structure
 
 ```
 ERP_Opencart_sync_system/
-|
-|-- .env                          # Environment variables (API keys, URLs, secrets)
-|-- main.py                       # Starts the FastAPI webhook server (real-time sync)
-|-- initiate_sync.py              # Runs bulk sync for all configured categories
-|-- main_manager.py               # Orchestrates add / update / delete operations
-|-- requirements.txt              # Python dependencies
-|-- db_bridge.php                 # PHP bridge file (upload to your OpenCart server)
-|
-|-- app/
-    |-- config/
-    |   |-- settings.py           # ERP stores, OpenCart languages, tax & stock settings
-    |   |-- category_configs.py   # ERPNext to OpenCart category name mapping
-    |
-    |-- controller/
-    |   |-- endpoints.py          # FastAPI routes for webhook-based sync
-    |   |-- schema.py             # Pydantic request schemas
-    |
-    |-- mapper/
-    |   |-- erpnext_to_opencart.py  # Maps ERPNext item fields to OpenCart product format
-    |
-    |-- services/
-    |   |-- ERPNext_services/
-    |   |   |-- item_service.py     # Fetches items, prices, quantities from ERPNext API
-    |   |
-    |   |-- opencart_services/
-    |       |-- product_addition.py   # Inserts new products into OpenCart
-    |       |-- prodcut_updating.py   # Updates existing products in OpenCart
-    |       |-- product_deleting.py   # Deletes products from OpenCart
-    |       |-- category_addition.py  # Links categories to products
-    |       |-- category_updating.py  # Updates category-product links
-    |
-    |-- utils/
-        |-- db_utils.py           # Sends SQL queries to the PHP bridge
-        |-- logger.py             # Logging configuration
+│
+├── .env                          # Environment variables (API keys, URLs, secrets)
+├── main.py                       # Starts the FastAPI webhook server (real-time sync)
+├── initiate_sync.py              # Runs bulk sync for all configured categories
+├── main_manager.py               # Orchestrates add / update / delete operations
+├── requirements.txt              # Python dependencies
+├── db_bridge.php                 # PHP bridge file (upload to your OpenCart server)
+│
+├── app/
+│   ├── config/
+│   │   ├── settings.py           # ERP stores, OpenCart languages, tax & stock settings
+│   │   └── category_configs.py   # ERPNext → OpenCart category name mapping
+│   │
+│   ├── controller/
+│   │   ├── endpoints.py          # FastAPI routes for webhook-based sync
+│   │   └── schema.py             # Pydantic request schemas
+│   │
+│   ├── mapper/
+│   │   └── erpnext_to_opencart.py  # Maps ERPNext item fields to OpenCart product format
+│   │
+│   ├── services/
+│   │   ├── ERPNext_services/
+│   │   │   └── item_service.py     # Fetches items, prices, quantities from ERPNext API
+│   │   │
+│   │   └── opencart_services/
+│   │       ├── product_addition.py   # Inserts new products into OpenCart
+│   │       ├── prodcut_updating.py   # Updates existing products in OpenCart
+│   │       ├── product_deleting.py   # Deletes products from OpenCart
+│   │       ├── category_addition.py  # Links categories to products
+│   │       └── category_updating.py  # Updates category-product links
+│   │
+│   └── utils/
+│       ├── db_utils.py           # Sends SQL queries to the PHP bridge
+│       └── logger.py             # Logging configuration
 ```
 
-
 ---
-
 
 ## Prerequisites
 
 - Python 3.10+
 - ERPNext instance with API access enabled
 - OpenCart store with admin access (to find language IDs, tax class IDs, stock status IDs)
-- Server access (FTP/SSH) to upload the PHP bridge file to OpenCart server
+- Server access (FTP/SSH) to upload the PHP bridge file
 - PHP + MySQL on the OpenCart server (already present if OpenCart is running)
-
 
 ---
 
-
 ## Installation
 
+### 1. Clone the Repository
 
-### Step 1 — Clone the Repository
-
-```
+```bash
 git clone https://github.com/your-username/ERP_Opencart_sync_system.git
 cd ERP_Opencart_sync_system
 ```
 
-
-### Step 2 — Create a Virtual Environment
+### 2. Create a Virtual Environment
 
 ```bash
 # Windows
@@ -134,15 +138,13 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
+### 3. Install Dependencies
 
-### Step 3 — Install Dependencies
-
-```
+```bash
 pip install -r requirements.txt
 ```
 
-
-### Step 4 — Set Up the PHP Bridge on Your OpenCart Server
+### 4. Set Up the PHP Bridge on Your OpenCart Server
 
 The `db_bridge.php` file acts as a secure middleman between this Python app and your OpenCart MySQL database.
 
@@ -158,30 +160,22 @@ $password = 'your_opencart_db_password';
 $database = 'your_opencart_db_name';
 ```
 
-   TIP: You can find the database credentials in your OpenCart's `config.php` on the server.
+> **Tip:** You can find the database credentials in your OpenCart's `config.php` file on the server.
 
-2. Upload `db_bridge.php` to the ROOT directory of your OpenCart installation
-   (e.g. `public_html/db_bridge.php`).
+2. Upload `db_bridge.php` to the **root directory** of your OpenCart installation (e.g., `public_html/db_bridge.php`).
 
-3. Test the bridge by visiting `https://your-opencart-domain.com/db_bridge.php`
-   in a browser. You should see `{"error":"Forbidden"}` — this means it's working.
-
+3. Test the bridge by visiting `https://your-opencart-domain.com/db_bridge.php` — you should see `{"error":"Forbidden"}` (this means it's working and rejecting unauthenticated requests).
 
 ---
 
-
 ## Configuration
 
-There are 3 files you need to configure before running the system.
+### 1. Environment Variables (`.env`)
 
+Create a `.env` file in the project root (a template already exists). Fill in all variables:
 
-### FILE 1:  `.env`  (Environment Variables)
-
-Create a `.env` file in the project root directory (same level as `main.py`).
-
-```
+```env
 # API Secret Key (Webhook Authentication)
-# ERPNext must send this key in the "Authorization" header.
 API_SECRET_KEY="your_api_secret_key_here"
 
 # ERPNext Configuration
@@ -195,23 +189,19 @@ SECRET="your_bridge_secret_key_here"
 DB_PREFIX="oc_"
 ```
 
-Variable reference:
-
 | Variable | Description | Example |
 |---|---|---|
 | `API_SECRET_KEY` | Secret key to authenticate webhook requests. ERPNext sends this in the `Authorization` header. | `"mY_s3cret_w3bhook_key"` |
-| `ERP_BASE_URL` | Your ERPNext site API base URL. Must end with `/api/resource`. | `https://myerp.frappe.cloud/api/resource` |
-| `ERP_API_KEY` | API key generated in ERPNext (Settings → API Access → Generate Keys). | `"8d4a583c6091756"` |
-| `ERP_API_SECRET` | API secret generated in ERPNext (paired with the API key). | `"8549b3a0f8f8c7a"` |
-| `BRIDGE_URL` | Full URL to the `db_bridge.php` file on your OpenCart server. | `"https://myshop.com/db_bridge.php"` |
-| `SECRET` | Must EXACTLY match the `SECRET` constant inside `db_bridge.php`. | `"mYs3cr3tKey_ch4ngeMe"` |
+| `ERP_BASE_URL` | ERPNext API base URL. Must end with `/api/resource`. | `https://myerp.frappe.cloud/api/resource` |
+| `ERP_API_KEY` | API key from ERPNext (Settings → API Access). | `"8d4a583c6091756"` |
+| `ERP_API_SECRET` | API secret from ERPNext (paired with the API key). | `"8549b3a0f8f8c7a"` |
+| `BRIDGE_URL` | Full URL to `db_bridge.php` on your OpenCart server. | `"https://myshop.com/db_bridge.php"` |
+| `SECRET` | Must exactly match the `SECRET` inside `db_bridge.php`. | `"mYs3cr3tKey_ch4ngeMe"` |
 | `DB_PREFIX` | OpenCart database table prefix. Usually `oc_`. | `"oc_"` |
 
+### 2. ERP & OpenCart Settings (`app/config/settings.py`)
 
-### FILE 2:  `app/config/settings.py`  (ERP & OpenCart Settings)
-
-
-#### A) ERPNext Store Settings
+#### ERPNext Store Settings
 
 ```python
 erp_settig = {
@@ -219,12 +209,11 @@ erp_settig = {
 }
 ```
 
-- `store` — List of ERPNext warehouse names used to calculate available quantity.
+- `store` — List of ERPNext warehouse names to calculate stock quantity.
 - Formula: `Available Qty = SUM(actual_qty - reserved_qty)` across all listed warehouses.
-- Find warehouse names in ERPNext → Stock → Warehouse (include the abbreviation, e.g. `"Stores - MGD"`).
+- Find names at: ERPNext → Stock → Warehouse (include abbreviation, e.g., `"Stores - MGD"`).
 
-
-#### B) OpenCart Settings
+#### OpenCart Settings
 
 ```python
 opencart_settings = {
@@ -236,15 +225,13 @@ opencart_settings = {
 
 | Setting | Description | How to Find |
 |---|---|---|
-| `languages` | List of language IDs. Product descriptions are inserted for each. | Admin → System → Localisation → Languages |
-| `tax_class_id` | Tax class to apply. `"0"` = no tax. | Admin → System → Localisation → Taxes → Tax Classes |
-| `stock_status_id` | Display label when qty = 0. Purely cosmetic. | Admin → System → Localisation → Stock Statuses |
+| `languages` | Language IDs in your OpenCart store. Descriptions inserted for each. | Admin → System → Localisation → Languages |
+| `tax_class_id` | Tax class for synced products. `"0"` = no tax. | Admin → System → Localisation → Taxes → Tax Classes |
+| `stock_status_id` | Display label when qty = 0 (cosmetic only). | Admin → System → Localisation → Stock Statuses |
 
-Common default stock status IDs: `5` = In Stock, `6` = 2-3 Days, `7` = Out of Stock, `8` = Pre-Order.
-These IDs may differ in your installation — always verify in admin.
+Default stock status IDs: `5` = In Stock, `6` = 2-3 Days, `7` = Out of Stock, `8` = Pre-Order. Verify in your admin panel.
 
-
-### FILE 3:  `app/config/category_configs.py`  (Category Mapping)
+### 3. Category Mapping (`app/config/category_configs.py`)
 
 Defines which ERPNext item groups are synced and maps them to OpenCart category names.
 
@@ -254,75 +241,50 @@ categoris_names_convertion = {
 }
 ```
 
-- **Key** = Exact Item Group name in ERPNext.
-- **Value** = Exact Category name in OpenCart (any language).
-- Only listed categories are synced — unlisted ones are skipped.
+- **Key** = Exact Item Group name in ERPNext
+- **Value** = Exact Category name in OpenCart (any language)
+- Only listed categories are synced; unlisted ones are skipped
 
-**IMPORTANT:**
-1. Categories must ALREADY EXIST in OpenCart (the system does NOT create them).
-2. Names must match EXACTLY (case-sensitive).
+> ⚠️ **Important:** Categories must already exist in OpenCart (the system does NOT create them). Names must match exactly (case-sensitive).
 
-Example:
+**Example:**
+
 ```python
 categoris_names_convertion = {
     'JVC'                   : 'JVC',
     'Magic Unbreakable'     : 'Magic Unbreakable',
-    'Electronics - Home'    : 'Home Electronics',      # Different names OK
+    'Electronics - Home'    : 'Home Electronics',      # different names OK
     'Air Conditioners'      : 'تكييفات',               # Arabic name OK
 }
 ```
 
-
 ---
-
 
 ## Usage
 
+### Bulk Sync — Sync All Products
 
-### Option 1 — Bulk Sync (Sync All Products)
+Fetches ALL products from every category in `category_configs.py` and syncs them to OpenCart. Use for initial import or full re-sync.
 
-Fetches ALL products from every category in `category_configs.py` and syncs them to OpenCart.
-Use this for the initial import or to re-sync everything.
-
-```
+```bash
 python initiate_sync.py
 ```
 
-The script iterates through each mapped category, fetches item data/price/quantity from ERPNext,
-and adds the product to OpenCart (including SEO URL and category linking). Retries up to 4 times on failure.
+The script iterates through each mapped category, fetches item data/price/quantity from ERPNext, and adds products to OpenCart (including SEO URL and category linking). Retries up to 4 times on failure.
 
+Console output: 🔵 Cyan = Fetching, 🟢 Green = Success, 🔴 Red = Error, 🟣 Magenta = Timing.
 
-### Option 2 — Real-Time Sync (Webhook API Server)
+### Real-Time Sync — Webhook API Server
 
 Starts a FastAPI server that listens for ERPNext webhook requests.
 
-```
+```bash
 python main.py
 ```
 
-Server starts on `http://localhost:8000`. To keep it running in background on Linux:
-```
-nohup python3.11 main.py > server.log 2>&1 &
-```
-
-
-### API Endpoints
-
-All endpoints require an `Authorization` header matching your `API_SECRET_KEY`.
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `POST` | `/sync/add-product` | Add a new product to OpenCart |
-| `PUT` | `/sync/update-product` | Update an existing product in OpenCart |
-| `DELETE` | `/sync/delete-product` | Delete a product from OpenCart |
-| `PUT` | `/sync/update-product-price` | Update only the price of a product |
-| `PUT` | `/sync/update-product-quantity-sle` | Update product quantity (Stock Ledger Entry) |
-| `PUT` | `/sync/update-product-quantity-so` | Update quantity for items in a Sales Order |
-| `GET` | `/` | Test endpoint (verify server is running) |
-
+Server starts on `http://localhost:8000`. Then configure ERPNext webhooks (see [ERPNext Webhook Setup](#erpnext-webhook-setup) below).
 
 ---
-
 
 ## ERPNext Webhook Setup
 
@@ -331,16 +293,17 @@ Go to: **Home → Integrations → Webhook** and create each one as described be
 
 ### Common Settings for ALL Webhooks
 
-All 7 webhooks share these headers:
+All 7 webhooks share these **headers**:
 
 | Header | Value |
 |---|---|
 | `Content-Type` | `application/json` |
 | `Authorization` | `Your_api_secret_key` |
 
-Replace `Your_api_secret_key` with the actual `API_SECRET_KEY` value from your `.env` file.
-Replace `{your-server}` in the URLs below with your actual server IP/domain and port.
+> Replace `Your_api_secret_key` with the actual `API_SECRET_KEY` from your `.env` file.
+> Replace `{your-server}` in the URLs below with your actual server IP/domain and port.
 
+---
 
 ### Webhook 1 — Insert Item (Add Product)
 
@@ -359,6 +322,7 @@ Replace `{your-server}` in the URLs below with your actual server IP/domain and 
 }
 ```
 
+---
 
 ### Webhook 2 — Update Item (Update Product)
 
@@ -377,6 +341,7 @@ Replace `{your-server}` in the URLs below with your actual server IP/domain and 
 }
 ```
 
+---
 
 ### Webhook 3 — Delete Item (Delete Product)
 
@@ -395,6 +360,7 @@ Replace `{your-server}` in the URLs below with your actual server IP/domain and 
 }
 ```
 
+---
 
 ### Webhook 4 — Update Price
 
@@ -413,6 +379,7 @@ Replace `{your-server}` in the URLs below with your actual server IP/domain and 
 | `price_list` | `price_list` |
 | `item_code` | `item_code` |
 
+---
 
 ### Webhook 5 — Update Quantity (Stock Ledger Entry)
 
@@ -429,6 +396,7 @@ Replace `{your-server}` in the URLs below with your actual server IP/domain and 
 |---|---|
 | `item_code` | `item_code` |
 
+---
 
 ### Webhook 6 — Update Quantity on Sales Order Submit
 
@@ -445,6 +413,7 @@ Replace `{your-server}` in the URLs below with your actual server IP/domain and 
 |---|---|
 | `items` | `items` |
 
+---
 
 ### Webhook 7 — Update Quantity on Sales Order Cancel
 
@@ -461,9 +430,23 @@ Replace `{your-server}` in the URLs below with your actual server IP/domain and 
 |---|---|
 | `items` | `items` |
 
-
 ---
 
+## API Endpoints
+
+All endpoints require an `Authorization` header matching your `API_SECRET_KEY`.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/sync/add-product` | Add a new product to OpenCart |
+| `PUT` | `/sync/update-product` | Update an existing product in OpenCart |
+| `DELETE` | `/sync/delete-product` | Delete a product from OpenCart |
+| `PUT` | `/sync/update-product-price` | Update only the price of a product |
+| `PUT` | `/sync/update-product-quantity-sle` | Update product quantity (Stock Ledger Entry) |
+| `PUT` | `/sync/update-product-quantity-so` | Update quantity for items in a Sales Order |
+| `GET` | `/` | Test endpoint (verify server is running) |
+
+---
 
 ## How It Works
 
@@ -475,23 +458,19 @@ Replace `{your-server}` in the URLs below with your actual server IP/domain and 
 
 4. **Category Linking** — The system maps ERPNext item groups to OpenCart categories via `categoris_names_convertion` and inserts the product-category relationship.
 
-
 ---
-
 
 ## Important Notes
 
-- Do NOT change file paths within the project — imports depend on the directory structure.
-- The `.env` file MUST be in the project root (same level as `main.py`).
-- Categories must EXIST in OpenCart before syncing — the system does NOT create them.
-- The `SECRET` in `.env` must EXACTLY match the `SECRET` in `db_bridge.php`.
-- Secure your `db_bridge.php` — it executes raw SQL. Use a strong secret and consider IP restrictions.
+- ⚠️ Do not change file paths within the project — imports depend on the directory structure.
+- ⚠️ The `.env` file must be in the project root (same level as `main.py`).
+- ⚠️ Categories must exist in OpenCart before syncing — the system does NOT create them.
+- ⚠️ The `SECRET` in `.env` must exactly match the `SECRET` in `db_bridge.php`.
+- ⚠️ Secure your `db_bridge.php` — it executes raw SQL. Use a strong secret and consider IP restrictions.
 - Price synced is from the "Standard Selling" price list in ERPNext.
 - Product SKU in OpenCart = Item Code in ERPNext (unique identifier to match products).
 
-
 ---
-
 
 ## Troubleshooting
 
@@ -502,10 +481,9 @@ Replace `{your-server}` in the URLs below with your actual server IP/domain and 
 | 401 / 403 on webhook endpoints | Ensure ERPNext sends the correct `API_SECRET_KEY` in the `Authorization` header. |
 | Products not syncing for a category | Verify category is listed in `category_configs.py` with exact ERPNext item group name. |
 | Quantity showing 0 | Check warehouse names in `erp_settig['store']` match ERPNext exactly (incl. abbreviation). |
-| Price showing 0 | Ensure the item has a price entry in the "Standard Selling" price list in ERPNext. |
+| Price showing 0 | Ensure item has a price entry in the "Standard Selling" price list in ERPNext. |
 | "No item codes found" warning | Item group name in `category_configs.py` doesn't match ERPNext. Check spelling/case. |
 | Connection timeout errors | System retries up to 4 times. Check network connectivity to ERPNext and OpenCart. |
-
 
 ---
 
