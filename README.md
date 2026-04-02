@@ -1,7 +1,7 @@
 
 
-visit this link to read the file better
-https://github.com/Marwan-badr543/ERP_Operncart_sync_system
+Visit this link if you are interseted in the code
+https://marwanbadr.gumroad.com/l/jodzh
 
 # ERPNext ↔ OpenCart Product Sync System
 
