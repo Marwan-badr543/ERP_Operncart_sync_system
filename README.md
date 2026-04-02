@@ -1,7 +1,6 @@
 
 
-Visit this link if you are interseted in the code
-https://marwanbadr.gumroad.com/l/jodzh
+Available for purchase at Gumroad: https://marwanbadr.gumroad.com/l/jodzh
 
 # ERPNext ↔ OpenCart Product Sync System
 
