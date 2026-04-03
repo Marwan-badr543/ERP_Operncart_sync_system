@@ -2,7 +2,7 @@
 
 Available for purchase at Gumroad: https://marwanbadr.gumroad.com/l/jodzh
 
-📺 Watch the Full Live Demo on YouTube
+📺 Watch the Full Live Demo on YouTube: https://youtu.be/dLG_WjKm_7c?si=fSuBtvx3Kt8FmN7X
 
 # ERPNext ↔ OpenCart Product Sync System
 
