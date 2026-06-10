@@ -1,0 +1,65 @@
+🚀 ERPNext ↔ OpenCart Auto-Sync System v2
+
+Stop wasting hours manually copying products, prices, and stock levels from your ERP to your online store. The ERPNext to OpenCart Sync System is a professional-grade integration that keeps your inventory, pricing, and product data perfectly in sync, 24/7.
+
+🌟 Why You Need This
+Running an e-commerce business alongside an ERP shouldn't be a data entry nightmare. This system acts as the "bridge" that ensures your OpenCart store reflects the ground truth of your ERPNext instance instantly.
+
+Whether you're adding new items, updating seasonal prices, or managing stock across multiple warehouses, this tool handles it all automatically.
+
+--------------------------------------------------
+
+🔥 Key Features
+
+- Real-Time Webhook Sync: Products are added, updated, or deleted on OpenCart the moment you save them in ERPNext.
+- Bulk Sync Ready: Migrate thousands of products from ERPNext to OpenCart in minutes with the high-performance bulk sync script.
+- Professional Image Sync: Automatically transfers product images from ERPNext to your OpenCart server with zero manual effort.
+- Dynamic Inventory Management: Calculates "Real Available Stock" across multiple warehouses (Actual Qty - Reserved Qty) so you never oversell.
+- Automatic Price Updates: Change a price in ERPNext, and it updates on your website instantly.
+- Multi-Language Support: Perfect for international stores—syncs product descriptions across all your OpenCart languages.
+- SEO-Optimized: Automatically generates clean, SEO-friendly URL keywords for every product.
+- Telegram Notifications: Get instant logs and success/error reports directly to your Telegram bot. Stay informed even when you're away from your desk.
+
+--------------------------------------------------
+
+💎 Values & Benefits
+
+1. Save 10+ Hours Every Week: Eliminate manual data entry and focus on growing your business.
+2. Zero Human Error: No more typos in prices or outdated stock levels. Everything is pulled directly from your ERP.
+3. Scale Your Catalog: Whether you have 100 or 10,000 products, the system handles the load effortlessly.
+4. Peace of Mind: With Telegram alerts and retry mechanisms, you'll know your sync is always running smoothly.
+5. Easy Setup: No complex OpenCart extensions required. Just upload one lightweight PHP file and run the Python app.
+
+--------------------------------------------------
+
+🛠️ What’s Under the Hood?
+
+- FastAPI & Python 3.10+: Powered by modern, high-performance technology.
+- PHP Database Bridge: A secure, high-speed connection to your OpenCart database without needing remote MySQL access enabled.
+- Smart Mapping: Easily map ERPNext "Item Groups" to your existing OpenCart "Categories."
+- Concurrency Enabled: Optimized for speed, processing images and data in parallel.
+
+--------------------------------------------------
+
+📦 What You'll Get
+- The complete Python Source Code.
+- The db_bridge.php security file.
+- Detailed documentation with step-by-step installation and configuration guide.
+- Webhook setup templates for ERPNext.
+
+--------------------------------------------------
+
+⚙️ Requirements
+- ERPNext Instance (with API access).
+- OpenCart Store (admin access).
+- A server to run Python (or even your local PC for testing).
+
+Ready to automate your store? Get started today!
+
+
+What’s Included:
+Everything in the Core Edition
+Advanced Automated Image Syncing
+Advanced Category Linking
+Telegram notifier for errors 
+High-Performance Concurrent Processing
