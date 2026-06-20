@@ -1,8 +1,5 @@
 
 
-visit this link to read the file better
-https://github.com/Marwan-badr543/ERP_Operncart_sync_system
-
 # ERPNext ↔ OpenCart Product Sync System
 
 A Python-based integration system that synchronizes products from ERPNext to OpenCart. Supports **bulk syncing** (all products at once) and **real-time webhook-based syncing** (add / update / delete individual products triggered by ERPNext events).
